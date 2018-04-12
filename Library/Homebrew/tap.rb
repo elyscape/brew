@@ -202,6 +202,8 @@ class Tap
   #
   # @param [Hash] options
   # @option options [String]  :clone_targe If passed, it will be used as the clone remote.
+  # @option options [Boolean] :force_auto_update If set, whether to override the logic
+  #  that skips non-GitHub repositories during auto-updates.
   # @option options [Boolean] :full_clone If set as true, full clone will be used.
   # @option options [Boolean] :quiet If set, suppress all output.
   def install(options = {})
@@ -210,12 +212,13 @@ class Tap
     full_clone = options.fetch(:full_clone, false)
     quiet = options.fetch(:quiet, false)
     requested_remote = options[:clone_target] || default_remote
+    force_auto_update = options.fetch(:force_auto_update, nil)
 
     if official? && DEPRECATED_OFFICIAL_TAPS.include?(repo)
       odie "#{name} was deprecated. This tap is now empty as all its formulae were migrated."
     end
 
-    if installed?
+    if installed? && force_auto_update.nil?
       raise TapAlreadyTappedError, name unless full_clone
       raise TapAlreadyUnshallowError, name unless shallow?
     end
@@ -224,6 +227,11 @@ class Tap
     Utils.ensure_git_installed!
 
     if installed?
+      unless force_auto_update.nil?
+        config["forceautoupdate"] = force_auto_update
+        return unless full_clone && shallow?
+      end
+
       if options[:clone_target] && requested_remote != remote
         raise TapRemoteMismatchError.new(name, @remote, requested_remote)
       end
@@ -258,6 +266,8 @@ class Tap
       end
       raise
     end
+
+    config["forceautoupdate"] = force_auto_update unless force_auto_update.nil?
 
     link_completions_and_manpages
 

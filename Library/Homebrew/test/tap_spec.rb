@@ -209,6 +209,31 @@ describe Tap do
       expect { already_tapped_tap.install full_clone: true }.to raise_error(TapAlreadyUnshallowError)
     end
 
+    describe "force_auto_update" do
+      it "defaults to nil" do
+        setup_git_repo
+        already_tapped_tap = described_class.new("Homebrew", "foo")
+        expect(already_tapped_tap).to be_installed
+        expect(already_tapped_tap.config["forceautoupdate"]).to be_nil
+      end
+
+      it "enables forced auto-updates when true" do
+        setup_git_repo
+        already_tapped_tap = described_class.new("Homebrew", "foo")
+        expect(already_tapped_tap).to be_installed
+        expect { already_tapped_tap.install force_auto_update: true }.not_to raise_error
+        expect(already_tapped_tap.config["forceautoupdate"]).to eq("true")
+      end
+
+      it "disables forced auto-updates when false" do
+        setup_git_repo
+        already_tapped_tap = described_class.new("Homebrew", "foo")
+        expect(already_tapped_tap).to be_installed
+        expect { already_tapped_tap.install force_auto_update: false }.not_to raise_error
+        expect(already_tapped_tap.config["forceautoupdate"]).to eq("false")
+      end
+    end
+
     specify "Git error" do
       tap = described_class.new("user", "repo")
 

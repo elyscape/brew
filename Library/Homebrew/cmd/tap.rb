@@ -1,7 +1,7 @@
 #:  * `tap`:
 #:    List all installed taps.
 #:
-#:  * `tap` [`--full`] <user>`/`<repo> [<URL>]:
+#:  * `tap` [`--full`] [`--force-auto-update`|`--no-force-auto-update`] <user>`/`<repo> [<URL>]:
 #:    Tap a formula repository.
 #:
 #:    With <URL> unspecified, taps a formula repository from GitHub using HTTPS.
@@ -17,6 +17,13 @@
 #:    By default, the repository is cloned as a shallow copy (`--depth=1`), but
 #:    if `--full` is passed, a full clone will be used. To convert a shallow copy
 #:    to a full copy, you can retap passing `--full` without first untapping.
+#:
+#:    By default, taps with repositories cloned from places other than GitHub
+#:    are skipped for performance reasons during the auto-update step that runs
+#:    before `brew install`, `brew upgrade` and `brew tap`. If `--force-auto-update` is
+#:    passed, this behavior will be disabled for the tap. Retapping with
+#:    `--no-force-auto-update` without first untapping will re-enable this
+#:    behavior.
 #:
 #:    `tap` is re-runnable and exits successfully if there's nothing to do.
 #:    However, retapping with a different <URL> will cause an exception, so first
@@ -44,6 +51,7 @@ module Homebrew
       tap = Tap.fetch(ARGV.named[0])
       begin
         tap.install clone_target: ARGV.named[1],
+                    force_auto_update: force_auto_update?,
                     full_clone: full_clone?,
                     quiet: ARGV.quieter?
       rescue TapRemoteMismatchError => e
@@ -55,5 +63,10 @@ module Homebrew
 
   def full_clone?
     ARGV.include?("--full") || ARGV.homebrew_developer?
+  end
+
+  def force_auto_update?
+    return true if ARGV.include?("--force-auto-update")
+    return false if ARGV.include?("--no-force-auto-update")
   end
 end
